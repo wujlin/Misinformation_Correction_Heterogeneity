@@ -56,3 +56,8 @@ The current direction is more promising than previous ideas around AI-generated 
 
 The next step is to refine the mechanism, define measurable variables, identify empirical contexts, and decide whether the study should use survey experiment, observational network data, simulation, or a mixed design.
 
+## Updated Reddit Direction
+
+After feasibility discussion, the current empirical direction is Reddit-based correction misallocation. The revised question is whether public corrections occur where misinformation correction is most needed, or whether correction supply is concentrated in communities that are already skeptical of the misinformation.
+
+See [04_Linear_Execution_Plan.md](04_Linear_Execution_Plan.md) for the current execution plan.
