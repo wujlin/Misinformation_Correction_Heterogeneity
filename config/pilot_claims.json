@@ -1,0 +1,55 @@
+[
+  {
+    "claim_id": "covid_5g",
+    "claim": "5G causes or spreads COVID-19.",
+    "queries": [
+      "\"5G\" \"COVID\"",
+      "\"5G causes COVID\"",
+      "\"5G\" \"coronavirus\""
+    ],
+    "fact_check_sources": [
+      "https://www.who.int/emergencies/diseases/novel-coronavirus-2019/advice-for-public/myth-busters",
+      "https://www.snopes.com/fact-check/5g-cellular-test-covid-19/"
+    ]
+  },
+  {
+    "claim_id": "mask_co2",
+    "claim": "Masks cause dangerous carbon dioxide poisoning or oxygen deprivation.",
+    "queries": [
+      "\"mask\" \"carbon dioxide\" \"COVID\"",
+      "\"masks cause CO2 poisoning\"",
+      "\"mask\" \"oxygen deprivation\""
+    ],
+    "fact_check_sources": [
+      "https://www.cdc.gov/respiratory-viruses/prevention/masks.html",
+      "https://www.snopes.com/fact-check/masks-dangerous-health/"
+    ]
+  },
+  {
+    "claim_id": "vaccine_infertility",
+    "claim": "COVID-19 vaccines cause infertility.",
+    "queries": [
+      "\"COVID vaccine\" \"infertility\"",
+      "\"vaccine causes infertility\"",
+      "\"covid shot\" \"infertile\""
+    ],
+    "fact_check_sources": [
+      "https://www.cdc.gov/covid/vaccines/planning-for-pregnancy.html",
+      "https://www.reuters.com/article/fact-check/covid-19-vaccines-do-not-cause-infertility-idUSL1N2MC0VF/"
+    ]
+  },
+  {
+    "claim_id": "ivermectin_cure",
+    "claim": "Ivermectin is a proven cure for COVID-19.",
+    "queries": [
+      "\"ivermectin\" \"COVID cure\"",
+      "\"ivermectin works\" \"COVID\"",
+      "\"ivermectin\" \"proven cure\""
+    ],
+    "fact_check_sources": [
+      "https://www.fda.gov/consumers/consumer-updates/ivermectin-and-covid-19",
+      "https://www.who.int/news-room/feature-stories/detail/who-advises-that-ivermectin-only-be-used-to-treat-covid-19-within-clinical-trials"
+    ]
+  }
+]
+

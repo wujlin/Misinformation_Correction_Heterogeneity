@@ -61,3 +61,14 @@ The next step is to refine the mechanism, define measurable variables, identify 
 After feasibility discussion, the current empirical direction is Reddit-based correction misallocation. The revised question is whether public corrections occur where misinformation correction is most needed, or whether correction supply is concentrated in communities that are already skeptical of the misinformation.
 
 See [04_Linear_Execution_Plan.md](04_Linear_Execution_Plan.md) for the current execution plan.
+
+## Pilot Collector
+
+The repository now includes a small Reddit pilot collector:
+
+```bash
+python src/reddit_collect.py search --claims config/pilot_claims.json --out data/raw/reddit_submissions.jsonl --limit-per-query 25
+python src/reddit_collect.py comments --submissions data/raw/reddit_submissions.jsonl --out data/raw/reddit_comments.jsonl --limit-submissions 50
+```
+
+Reddit login cookies are not required for the default workflow. Use OAuth credentials through a local `.env` file if public JSON endpoints are rate-limited or blocked. See [docs/data_access.md](docs/data_access.md).

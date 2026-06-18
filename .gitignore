@@ -8,9 +8,21 @@ Thumbs.db
 *.tmp
 *.bak
 ~$*
+.env
+.env.*
+!.env.example
 
 # Python/cache artifacts for future scripts
 __pycache__/
 *.py[cod]
 .pytest_cache/
 
+# Research data outputs
+data/raw/*
+data/processed/*
+data/interim/*
+logs/*
+!data/raw/.gitkeep
+!data/processed/.gitkeep
+!data/interim/.gitkeep
+!logs/.gitkeep
