@@ -194,4 +194,3 @@ The strongest positioning is:
 > This study explains why heterogeneity can improve misinformation recognition while inhibiting public correction. It shows how network structure and audience composition jointly shape the gap between private recognition and public correction.
 
 This positioning keeps the project close to communication research and avoids turning it into a purely technical simulation paper.
-

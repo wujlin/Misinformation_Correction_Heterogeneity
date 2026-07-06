@@ -344,4 +344,3 @@ The methodological contribution is:
 5. Label a pilot sample.
 6. Estimate correction prevalence and classifier reliability.
 7. Decide whether Reddit is feasible for the full study.
-

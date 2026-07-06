@@ -16,13 +16,41 @@ Thumbs.db
 __pycache__/
 *.py[cod]
 .pytest_cache/
+.ipynb_checkpoints/
+.mypy_cache/
+.ruff_cache/
 
 # Research data outputs
 data/raw/*
 data/processed/*
 data/interim/*
 logs/*
+outputs/*
 !data/raw/.gitkeep
 !data/processed/.gitkeep
 !data/interim/.gitkeep
 !logs/.gitkeep
+
+# Model/checkpoint artifacts
+*.pt
+*.pth
+*.ckpt
+*.safetensors
+checkpoint*/
+checkpoints/
+models/
+runs/
+wandb/
+
+# LaTeX build artifacts
+*.aux
+*.bbl
+*.bcf
+*.blg
+*.fdb_latexmk
+*.fls
+*.log
+*.out
+*.run.xml
+*.synctex.gz
+*.toc

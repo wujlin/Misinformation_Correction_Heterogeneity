@@ -1,14 +1,20 @@
 #!/usr/bin/env python3
-"""Pilot Reddit collector for correction misallocation research.
+"""Optional Reddit collector for correction misallocation research.
 
-The script intentionally keeps the first collector small:
+The live Reddit API route is not assumed by the current project because the
+Reddit for Researchers request was not approved. This script is retained only
+for users who have their own valid Reddit API access.
+
+The script intentionally keeps collection small:
 
 - search Reddit submissions for predefined misinformation queries;
 - fetch comment trees for candidate submissions;
 - write JSONL outputs for downstream annotation and network construction.
 
 It uses Reddit OAuth when REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET are set.
-When credentials are absent, it falls back to public JSON endpoints.
+When credentials are absent, the script stops unless the user explicitly opts
+into public JSON endpoints. Browser login cookies are not supported as a
+default access route.
 """
 
 from __future__ import annotations
@@ -66,10 +72,17 @@ def iter_jsonl(path: Path) -> Iterable[dict[str, Any]]:
 
 
 class RedditClient:
-    def __init__(self, user_agent: str, sleep_seconds: float = 1.0) -> None:
+    def __init__(self, user_agent: str, sleep_seconds: float = 1.0, allow_public_json: bool = False) -> None:
         self.user_agent = user_agent
         self.sleep_seconds = sleep_seconds
+        self.allow_public_json = allow_public_json
         self.access_token = self._get_access_token()
+        if not self.access_token and not self.allow_public_json:
+            raise RuntimeError(
+                "No Reddit OAuth credentials found. Set REDDIT_CLIENT_ID and "
+                "REDDIT_CLIENT_SECRET, or pass --allow-public-json after "
+                "confirming that this access route is appropriate for your use case."
+            )
 
     @property
     def using_oauth(self) -> bool:
@@ -234,8 +247,9 @@ def dedupe_submissions(rows: Iterable[dict[str, Any]]) -> list[dict[str, Any]]:
 
 def run_search(args: argparse.Namespace) -> None:
     claims = read_json(args.claims)
-    client = RedditClient(args.user_agent, args.sleep)
-    print(f"Access mode: {'oauth' if client.using_oauth else 'public-json'}", file=sys.stderr)
+    client = None if args.dry_run else RedditClient(args.user_agent, args.sleep, allow_public_json=args.allow_public_json)
+    access_mode = "dry-run" if client is None else ("oauth" if client.using_oauth else "public-json")
+    print(f"Access mode: {access_mode}", file=sys.stderr)
 
     rows = []
     for claim in claims:
@@ -243,8 +257,13 @@ def run_search(args: argparse.Namespace) -> None:
             print(f"Searching {claim['claim_id']}: {query}", file=sys.stderr)
             if args.dry_run:
                 continue
+            assert client is not None
             submissions = client.search_submissions(query, args.limit_per_query, args.sort)
             rows.extend(normalize_submission(item, claim, query) for item in submissions)
+
+    if args.dry_run:
+        print("Dry run complete; no output file written.", file=sys.stderr)
+        return
 
     rows = dedupe_submissions(rows)
     count = write_jsonl(args.out, rows)
@@ -252,8 +271,9 @@ def run_search(args: argparse.Namespace) -> None:
 
 
 def run_comments(args: argparse.Namespace) -> None:
-    client = RedditClient(args.user_agent, args.sleep)
-    print(f"Access mode: {'oauth' if client.using_oauth else 'public-json'}", file=sys.stderr)
+    client = None if args.dry_run else RedditClient(args.user_agent, args.sleep, allow_public_json=args.allow_public_json)
+    access_mode = "dry-run" if client is None else ("oauth" if client.using_oauth else "public-json")
+    print(f"Access mode: {access_mode}", file=sys.stderr)
 
     submissions = list(iter_jsonl(args.submissions))
     if args.limit_submissions:
@@ -267,6 +287,7 @@ def run_comments(args: argparse.Namespace) -> None:
         print(f"[{i}/{len(submissions)}] Fetching comments for {submission_id}", file=sys.stderr)
         if args.dry_run:
             continue
+        assert client is not None
         try:
             fetched_submission, comments = client.fetch_comments(submission_id, args.comment_limit)
         except RuntimeError as exc:
@@ -283,6 +304,10 @@ def run_comments(args: argparse.Namespace) -> None:
                 )
             )
 
+    if args.dry_run:
+        print("Dry run complete; no output file written.", file=sys.stderr)
+        return
+
     count = write_jsonl(args.out, rows)
     print(f"Wrote {count} comments to {args.out}", file=sys.stderr)
 
@@ -297,6 +322,11 @@ def build_parser() -> argparse.ArgumentParser:
     )
     parser.add_argument("--sleep", type=float, default=1.0, help="Seconds to sleep between requests.")
     parser.add_argument("--dry-run", action="store_true", help="Print plan without requesting data.")
+    parser.add_argument(
+        "--allow-public-json",
+        action="store_true",
+        help="Explicitly allow unauthenticated public JSON endpoints when OAuth credentials are absent.",
+    )
 
     subparsers = parser.add_subparsers(dest="command", required=True)
 

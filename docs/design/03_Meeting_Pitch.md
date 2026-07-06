@@ -20,4 +20,3 @@ This project examines why heterogeneous networks may improve misinformation reco
 - Which empirical context is more feasible: social media discussion threads, survey experiment, or synthetic ABM calibrated by human data?
 - Should LLM agents be a central method, or should they only be used after a survey experiment provides behavioral parameters?
 - Which outcome is stronger: public correction intention, actual correction behavior, or misinformation persistence in simulated networks?
-

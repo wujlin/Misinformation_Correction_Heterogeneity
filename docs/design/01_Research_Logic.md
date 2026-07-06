@@ -103,4 +103,3 @@ This direction is stronger because it contains a real tension:
 This is not a simple volume effect. It also creates a clear social psychological mechanism. The same online network condition can produce informational benefit and expressive inhibition.
 
 The project can explain misinformation persistence as a networked gap between private recognition and public correction.
-

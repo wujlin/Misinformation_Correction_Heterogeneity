@@ -1,0 +1,12 @@
+# Initial Reddit archive pilot subreddits.
+# Keep this small for the first feasibility run.
+
+Coronavirus
+COVID19
+science
+medicine
+AskDocs
+conspiracy
+DebateVaccines
+LockdownSkepticism
+NoNewNormal
