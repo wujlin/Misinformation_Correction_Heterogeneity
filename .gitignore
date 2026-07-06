@@ -54,3 +54,7 @@ wandb/
 *.run.xml
 *.synctex.gz
 *.toc
+
+# Generated manuscript upload packages
+manuscript/overleaf_upload/
+manuscript/overleaf_upload.zip
