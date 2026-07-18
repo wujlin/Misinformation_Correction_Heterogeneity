@@ -4,7 +4,7 @@
 
 Reddit for Researchers API access was not approved. The rejection was received on July 4, 2026.
 
-The project therefore does not assume live Reddit API access. The repository should be treated as a code, documentation, and manuscript repository with local-only data assets.
+The project therefore does not assume live Reddit API access. The repository should be treated as a code repository with local-only data assets.
 
 ## Data-Access Policy
 
@@ -59,4 +59,4 @@ If the project reapplies for access later, the application should include:
 - public-output boundary;
 - ethics review or institutional approval status, if available.
 
-Until then, manuscript claims should describe the data as locally prepared Reddit COVID-19 vaccination discussion data and should not imply ongoing Reddit API collection.
+Until then, public documentation should describe the data as locally prepared Reddit discussion data and should not imply ongoing Reddit API collection.

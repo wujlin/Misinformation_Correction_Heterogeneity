@@ -69,12 +69,55 @@ def clean_axes(ax: plt.Axes, keep_left: bool = False) -> None:
         ax.tick_params(axis="y", length=0)
 
 
+def average_precision_binary(y_true: np.ndarray, scores: np.ndarray) -> float:
+    order = np.argsort(-scores, kind="mergesort")
+    sorted_scores = scores[order]
+    sorted_true = y_true[order]
+    positive_count = int(sorted_true.sum())
+    if positive_count == 0:
+        return float("nan")
+    distinct_indices = np.where(np.diff(sorted_scores))[0]
+    threshold_indices = np.r_[distinct_indices, len(sorted_true) - 1]
+    true_positives = np.cumsum(sorted_true)[threshold_indices]
+    false_positives = 1 + threshold_indices - true_positives
+    precision = true_positives / (true_positives + false_positives)
+    recall = true_positives / positive_count
+    return float(np.sum(np.diff(np.r_[0, recall]) * precision))
+
+
+def roc_auc_binary(y_true: np.ndarray, scores: np.ndarray) -> float:
+    positive_count = int(y_true.sum())
+    negative_count = int(len(y_true) - positive_count)
+    if positive_count == 0 or negative_count == 0:
+        return float("nan")
+    ranks = pd.Series(scores).rank(method="average").to_numpy()
+    positive_rank_sum = float(ranks[y_true == 1].sum())
+    auc = (positive_rank_sum - positive_count * (positive_count + 1) / 2) / (positive_count * negative_count)
+    return float(auc)
+
+
+def threshold_metrics(y_true: np.ndarray, scores: np.ndarray, threshold: float = 0.5) -> dict[str, float | int]:
+    y_pred = (scores >= threshold).astype(int)
+    tp = int(((y_true == 1) & (y_pred == 1)).sum())
+    fp = int(((y_true == 0) & (y_pred == 1)).sum())
+    fn = int(((y_true == 1) & (y_pred == 0)).sum())
+    precision = tp / (tp + fp) if tp + fp else 0.0
+    recall = tp / (tp + fn) if tp + fn else 0.0
+    f1 = 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+    return {
+        "precision_at_0_5": float(precision),
+        "recall_at_0_5": float(recall),
+        "f1_at_0_5": float(f1),
+        "predicted_positive_at_0_5": int(y_pred.sum()),
+    }
+
+
 def detector_validation_values(summary: dict[str, Any]) -> tuple[pd.DataFrame, pd.DataFrame]:
     metrics = summary["audit3_main_metric_reference"]
     metric_rows = [
-        ("Average precision", metrics["average_precision"]),
+        ("AP", metrics["average_precision"]),
         ("ROC-AUC", metrics["roc_auc"]),
-        ("F1 at 0.5", metrics["f1_at_0_5"]),
+        ("F1@0.5", metrics["f1_at_0_5"]),
     ]
     metric_df = pd.DataFrame(metric_rows, columns=["label", "value"])
 
@@ -96,47 +139,159 @@ def detector_validation_values(summary: dict[str, Any]) -> tuple[pd.DataFrame, p
     return metric_df, coverage_df
 
 
-def figure_detector_validation(summary: dict[str, Any], output_dir: Path, tables_dir: Path) -> None:
+def comment_only_audit3_metrics(annotations_path: Path) -> dict[str, Any]:
+    annotations = pd.read_csv(annotations_path)
+    labels = pd.to_numeric(annotations["llm_pair_label"], errors="coerce")
+    scores = pd.to_numeric(annotations["public_correction_score"], errors="coerce")
+    valid = labels.isin([0, 1]) & scores.notna()
+    y_true = labels.loc[valid].astype(int).to_numpy()
+    score_values = scores.loc[valid].astype(float).to_numpy()
+    values = {
+        "score_name": "public_correction_score",
+        "average_precision": average_precision_binary(y_true, score_values),
+        "roc_auc": roc_auc_binary(y_true, score_values),
+    }
+    values.update(threshold_metrics(y_true, score_values))
+    return values
+
+
+def detector_model_comparison_values(ranking_path: Path, annotations_path: Path) -> pd.DataFrame:
+    """Comparable detector families evaluated on the same held-out test set."""
+    ranking = pd.read_csv(ranking_path).set_index("score_name")
+    comparison_specs = [
+        (
+            "Relation-aware",
+            "base_best_plus_large_title_roberta_mean",
+            True,
+            "selected relation-aware ensemble",
+        ),
+        (
+            "Pair + title",
+            "title6232",
+            False,
+            "binary pair-relation DeBERTa-v3-base with thread title",
+        ),
+        (
+            "Pair only",
+            "claim6232",
+            False,
+            "binary pair-relation DeBERTa-v3-base",
+        ),
+        (
+            "Large pair + title",
+            "large_title6232",
+            False,
+            "binary pair-relation DeBERTa-v3-large with thread title",
+        ),
+        (
+            "NLI pair",
+            "roberta_mnli6232",
+            False,
+            "NLI-style pair model",
+        ),
+        (
+            "Relation type",
+            "type6232",
+            False,
+            "multi-class relation-type DeBERTa-v3-base",
+        ),
+    ]
+    rows = []
+    for label, score_name, selected, model_family in comparison_specs:
+        values = ranking.loc[score_name].to_dict()
+        values.update(
+            {
+                "label": label,
+                "score_name": score_name,
+                "selected": selected,
+                "model_family": model_family,
+            }
+        )
+        rows.append(values)
+
+    comment_values = comment_only_audit3_metrics(annotations_path)
+    comment_values.update(
+        {
+            "label": "Comment only",
+            "selected": False,
+            "model_family": "comment-level DeBERTa-v3-base projected to test pairs",
+        }
+    )
+    rows.append(comment_values)
+    columns = [
+        "label",
+        "score_name",
+        "model_family",
+        "average_precision",
+        "roc_auc",
+        "precision_at_0_5",
+        "recall_at_0_5",
+        "f1_at_0_5",
+        "predicted_positive_at_0_5",
+        "selected",
+    ]
+    comparison = pd.DataFrame(rows, columns=columns)
+    comparison["predicted_positive_at_0_5"] = comparison["predicted_positive_at_0_5"].astype(int)
+    comparison["selected"] = comparison["selected"].astype(bool)
+    return comparison
+
+
+def detector_full_model_ranking(ranking_path: Path, annotations_path: Path) -> pd.DataFrame:
+    ranking = pd.read_csv(ranking_path)
+    comment_values = comment_only_audit3_metrics(annotations_path)
+    comment_values["label"] = "Comment-only DeBERTa-base"
+    full = pd.concat([ranking, pd.DataFrame([comment_values])], ignore_index=True, sort=False)
+    return full.sort_values("average_precision", ascending=False)
+
+
+def figure_detector_validation(summary: dict[str, Any], args: argparse.Namespace, output_dir: Path, tables_dir: Path) -> None:
     metric_df, coverage_df = detector_validation_values(summary)
+    comparison_df = detector_model_comparison_values(args.audit3_model_ranking, args.audit3_annotations)
+    full_comparison_df = detector_full_model_ranking(args.audit3_model_ranking, args.audit3_annotations)
     metric_df.to_csv(tables_dir / "detector_validation_metrics.csv", index=False)
     coverage_df.to_csv(tables_dir / "detector_validation_coverage.csv", index=False)
+    comparison_df.to_csv(tables_dir / "detector_model_comparison_audit3.csv", index=False)
+    full_comparison_df.to_csv(tables_dir / "detector_model_comparison_audit3_full.csv", index=False)
 
-    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.35), gridspec_kw={"width_ratios": [1.0, 1.25]})
+    fig, axes = plt.subplots(1, 2, figsize=(7.2, 3.8), gridspec_kw={"width_ratios": [0.9, 1.55]})
 
     ax = axes[0]
     y = np.arange(len(metric_df))[::-1]
-    colors = [BLUE if label in {"Average precision", "ROC-AUC"} else "#8A8A8A" for label in metric_df["label"]]
+    colors = [BLUE if label in {"AP", "ROC-AUC"} else "#8A8A8A" for label in metric_df["label"]]
     ax.barh(y, metric_df["value"], color=colors, height=0.58)
     ax.set_yticks(y)
     ax.set_yticklabels(metric_df["label"])
     ax.set_xlim(0, 1.0)
-    ax.set_xlabel("Validation metric")
-    ax.grid(axis="x", color=LIGHT_GRAY, linewidth=0.6)
+    ax.set_xlabel("Score")
+    ax.set_xticks([0.0, 0.5, 1.0])
     for yi, value in zip(y, metric_df["value"]):
         ax.text(value + 0.018, yi, f"{value:.3f}", va="center", ha="left", color=GRAY, fontsize=7.5)
     clean_axes(ax)
     add_panel_label(ax, "A", x=-0.22)
 
     ax = axes[1]
-    coverage_plot = coverage_df.iloc[::-1].reset_index(drop=True)
-    y = np.arange(len(coverage_plot))
-    colors = [BLUE_LIGHT if unit == "comment" else CLAY_LIGHT for unit in coverage_plot["unit"]]
-    ax.barh(y, coverage_plot["count"], color=colors, height=0.58)
-    ax.set_yticks(y)
-    ax.set_yticklabels(coverage_plot["label"])
-    ax.set_xlabel("Corpus count")
-    ax.set_xticks([0, 50_000, 100_000, 150_000])
-    ax.set_xticklabels(["0", "50k", "100k", "150k"])
-    ax.grid(axis="x", color=LIGHT_GRAY, linewidth=0.6)
-    xmax = coverage_plot["count"].max()
-    ax.set_xlim(0, xmax * 1.18)
-    for yi, row in coverage_plot.iterrows():
-        count = int(row["count"])
-        if row["unit"] == "comment":
-            text = f"{count:,} ({row['share_of_comments'] * 100:.1f}%)"
+    comparison_plot = comparison_df.iloc[::-1].reset_index(drop=True)
+    y = np.arange(len(comparison_plot))
+    bar_colors = [BLUE_DARK if row["selected"] else BLUE_LIGHT for _, row in comparison_plot.iterrows()]
+    ax.barh(y, comparison_plot["average_precision"], color=bar_colors, height=0.58, zorder=1)
+    for yi, row in comparison_plot.iterrows():
+        ax.scatter(row["f1_at_0_5"], yi, s=30, facecolor=BG, edgecolor=CLAY, linewidth=1.2, zorder=3, label="F1@0.5" if yi == 0 else None)
+        if row["f1_at_0_5"] > row["average_precision"] and row["f1_at_0_5"] - row["average_precision"] < 0.12:
+            label_x = row["average_precision"] - 0.014
+            ha = "right"
         else:
-            text = f"{count:,} pairs"
-        ax.text(count + xmax * 0.018, yi, text, va="center", ha="left", color=GRAY, fontsize=7.3)
+            label_x = row["average_precision"] + 0.014
+            ha = "left"
+        ax.text(label_x, yi, f"{row['average_precision']:.3f}", va="center", ha=ha, color=GRAY, fontsize=7.1)
+    ax.set_yticks(y)
+    ax.set_yticklabels(comparison_plot["label"])
+    ax.set_xlabel("Score")
+    ax.set_xlim(0.0, 0.86)
+    ax.set_xticks([0.0, 0.2, 0.4, 0.6, 0.8])
+    ax.set_ylim(-0.35, len(comparison_plot) - 0.65)
+    ap_handle = mpl.patches.Patch(color=BLUE_LIGHT, label="AP")
+    f1_handle = mpl.lines.Line2D([], [], marker="o", markersize=5, markerfacecolor=BG, markeredgecolor=CLAY, linestyle="None", label="F1@0.5")
+    ax.legend(handles=[ap_handle, f1_handle], frameon=False, loc="upper right", bbox_to_anchor=(1.0, 1.12), ncol=2, handletextpad=0.4, columnspacing=1.0)
     clean_axes(ax)
     add_panel_label(ax, "B", x=-0.24)
 
@@ -146,12 +301,12 @@ def figure_detector_validation(summary: dict[str, Any], output_dir: Path, tables
 
 def select_terms(coef: pd.DataFrame) -> pd.DataFrame:
     labels = {
-        "user_cross_group_observed": "Cross-group user",
-        "high_early_audience_structural_heterogeneity": "High early audience structural heterogeneity",
-        "user_cross_group_observed:high_early_audience_structural_heterogeneity": "Cross-group x early audience\nstructural heterogeneity",
+        "user_cross_group_observed": "Cross-group structural position",
+        "high_early_audience_structural_heterogeneity": "High early audience\nstructural heterogeneity",
+        "user_cross_group_observed:high_early_audience_structural_heterogeneity": "Cross-group structural position $\\times$\nhigh early audience structural\nheterogeneity",
         "early_correction_norm_presence": "Early correction norm",
         "high_thread_hostility_climate": "High hostile thread climate",
-        "early_correction_norm_presence:high_thread_hostility_climate": "Early correction norm x\nhostile thread climate",
+        "early_correction_norm_presence:high_thread_hostility_climate": "Early correction norm $\\times$\nhigh hostile thread climate",
         "high_early_discursive_heterogeneity": "High early discursive heterogeneity",
     }
     rows = []
@@ -171,33 +326,49 @@ def plot_scenario_lines(
     y_label: str,
     y_lim: tuple[float, float],
     x_label: str | None = "Early audience\nstructural heterogeneity",
+    scale: float = 100.0,
+    value_fmt: str = "{:.1f}",
 ) -> None:
     scenario = scenario.copy()
     scenario["x"] = scenario["high_early_audience_structural_heterogeneity"].astype(int)
     scenario["cross_group"] = scenario["user_cross_group_observed"].astype(int)
-    labels = {0: "Non-cross-group", 1: "Cross-group"}
+    labels = {0: "No cross-group", 1: "Cross-group"}
     colors = {0: "#8A8A8A", 1: BLUE}
+    line_styles = {0: (0, (3, 2)), 1: "-"}
+    marker_faces = {0: BG, 1: BLUE}
     for cross_group in [0, 1]:
         sub = scenario.loc[scenario["cross_group"] == cross_group].sort_values("x")
-        values = sub[value_col].to_numpy() * 100
+        values = sub[value_col].to_numpy() * scale
         ax.plot(
             sub["x"].to_numpy(),
             values,
             color=colors[cross_group],
+            linestyle=line_styles[cross_group],
             marker="o",
+            markerfacecolor=marker_faces[cross_group],
+            markeredgecolor=colors[cross_group],
+            markeredgewidth=1.0,
             linewidth=1.7,
             markersize=4.5,
             label=labels[cross_group],
+            zorder=3,
         )
         for x, value in zip(sub["x"].to_numpy(), values):
-            ax.text(x, value + (y_lim[1] - y_lim[0]) * 0.035, f"{value:.1f}", ha="center", va="bottom", fontsize=7.2)
+            ax.text(
+                x,
+                value + (y_lim[1] - y_lim[0]) * 0.035,
+                value_fmt.format(value),
+                ha="center",
+                va="bottom",
+                color=BLUE_DARK if cross_group else GRAY,
+                fontsize=7.2,
+            )
     ax.set_xticks([0, 1])
     ax.set_xticklabels(["Low", "High"])
     if x_label:
         ax.set_xlabel(x_label)
     ax.set_ylabel(y_label)
     ax.set_ylim(*y_lim)
-    ax.grid(axis="y", color=LIGHT_GRAY, linewidth=0.6)
     clean_axes(ax, keep_left=True)
 
 
@@ -226,18 +397,20 @@ def figure_observational_mechanism(
     x = forest["odds_ratio"].to_numpy()
     lo = forest["odds_ratio_ci_low"].to_numpy()
     hi = forest["odds_ratio_ci_high"].to_numpy()
-    colors = [BLUE if p < 0.05 else "#8A8A8A" for p in forest["p_value"]]
+    significant = forest["p_value"].to_numpy() < 0.05
+    facecolors = [BLUE if is_significant else BG for is_significant in significant]
+    edgecolors = [BLUE if is_significant else "#7A7A7A" for is_significant in significant]
     ax_forest.hlines(y, lo, hi, color="#8E8E8E", linewidth=1.0)
-    ax_forest.scatter(x, y, s=34, color=colors, zorder=3)
-    ax_forest.axvline(1.0, color="#222222", linewidth=0.9)
+    ax_forest.scatter(x, y, s=34, facecolor=facecolors, edgecolor=edgecolors, linewidth=1.0, zorder=3)
+    ax_forest.axvline(1.0, color="#222222", linewidth=0.9, zorder=1)
     ax_forest.set_xscale("log")
     ax_forest.set_xticks([0.75, 1.0, 1.25, 1.5, 2.0])
     ax_forest.set_xticklabels(["0.75", "1.0", "1.25", "1.5", "2.0"])
     ax_forest.set_yticks(y)
     ax_forest.set_yticklabels(forest["label"])
-    ax_forest.set_xlabel("Odds ratio in main heterogeneity logit")
+    ax_forest.set_xlabel("Odds ratio for later public correction")
     ax_forest.set_xlim(0.7, 2.25)
-    ax_forest.grid(axis="x", color=LIGHT_GRAY, linewidth=0.6)
+    ax_forest.minorticks_off()
     clean_axes(ax_forest)
     add_panel_label(ax_forest, "A", x=-0.32)
 
@@ -256,8 +429,10 @@ def figure_observational_mechanism(
         ax_score,
         score_scenario,
         "average_predicted_score_any",
-        "Correction score (%)",
-        (17.0, 24.8),
+        "Correction score",
+        (0.17, 0.248),
+        scale=1.0,
+        value_fmt="{:.3f}",
     )
     add_panel_label(ax_score, "C", x=-0.18, y=1.12)
 
@@ -272,6 +447,8 @@ def write_run_summary(base_output_dir: Path, args: argparse.Namespace, detector_
         "detector_summary": str(args.detector_summary),
         "logit_dir": str(args.logit_dir),
         "score_ols_dir": str(args.score_ols_dir),
+        "audit3_model_ranking": str(args.audit3_model_ranking),
+        "audit3_annotations": str(args.audit3_annotations),
         "detector_main_ensemble": detector_summary.get("main_ensemble_name"),
         "audit3_main_metric_reference": detector_summary.get("audit3_main_metric_reference"),
         "comment_rows": detector_summary.get("comment_rows"),
@@ -301,7 +478,7 @@ def run(args: argparse.Namespace) -> None:
     score_coef = pd.read_csv(args.score_ols_dir / "tables" / "score_ols_coefficients.csv")
     score_scenario = pd.read_csv(args.score_ols_dir / "tables" / "score_heterogeneity_scenario_predicted_values.csv")
 
-    figure_detector_validation(detector_summary, figures_dir, tables_dir)
+    figure_detector_validation(detector_summary, args, figures_dir, tables_dir)
     figure_observational_mechanism(logit_coef, logit_scenario, score_coef, score_scenario, figures_dir, tables_dir)
     write_run_summary(args.output_dir, args, detector_summary)
     (args.output_dir / "run.log").write_text(
@@ -311,6 +488,8 @@ def run(args: argparse.Namespace) -> None:
                 f"detector_summary={args.detector_summary}",
                 f"logit_dir={args.logit_dir}",
                 f"score_ols_dir={args.score_ols_dir}",
+                f"audit3_model_ranking={args.audit3_model_ranking}",
+                f"audit3_annotations={args.audit3_annotations}",
                 f"output_dir={args.output_dir}",
             ]
         )
@@ -335,6 +514,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--score-ols-dir",
         type=Path,
         default=Path("outputs/thread_climate_score_ols_no_anti_latest_pair_ensemble_20260701T092500Z"),
+    )
+    parser.add_argument(
+        "--audit3-model-ranking",
+        type=Path,
+        default=Path("outputs/pair_relation_ensemble_raw_models_on_audit3_20260628T020000Z/metrics/score_ranking.csv"),
+    )
+    parser.add_argument(
+        "--audit3-annotations",
+        type=Path,
+        default=Path("outputs/llm_qwen_pair_relation_independent_audit3_combined_800_20260627T162524Z/llm_pair_annotations.csv"),
     )
     parser.add_argument(
         "--output-dir",

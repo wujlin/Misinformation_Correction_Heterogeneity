@@ -1416,9 +1416,9 @@ FUNCTION {begin.bib}
   write$ newline$
   "\expandafter\ifx\csname urlstyle\endcsname\relax"
   write$ newline$
-  "  \providecommand{\doi}[1]{doi: #1}\else"
+  "  \providecommand{\doi}[1]{\url{https://doi.org/#1}}\else"
   write$ newline$
-  "  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi"
+  "  \providecommand{\doi}[1]{\begingroup\urlstyle{rm}\url{https://doi.org/#1}\endgroup}\fi"
   write$ newline$
 }
 

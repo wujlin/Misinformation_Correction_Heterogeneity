@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Empirically calibrated ABM for public correction supply.
+"""Empirically calibrated ABM for aggregate public correction.
 
 The simulation uses observed thread-author instances as the agent population.
 Agent decision probabilities are calibrated from a no-anti-institutional logit

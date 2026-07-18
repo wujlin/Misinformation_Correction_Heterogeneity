@@ -27,7 +27,7 @@ Git tracks only `.gitkeep` files in the data/log directories. The public reposit
   - `data/interim/covidvaccine_submissions.jsonl`
   - `data/interim/covidvaccine_comments.jsonl`
   - `data/interim/covidvaccine_thread_profiles.csv`
-- Role: topic-specific feasibility test and current mechanism analysis for public correction, thread-level denominator construction, and local thread profiles.
+- Role: topic-specific data preparation, corrective-response measurement, and thread-level analysis.
 - Limitation: the dataset is topic-specific and does not provide complete Reddit-wide user histories. Cross-subreddit measures are therefore observed within this dataset, not complete user-level platform histories.
 - Public-release boundary: raw and derived comment-level files are not redistributed through this repository.
 
@@ -58,13 +58,6 @@ Initial target files:
 - Repository status: no live API access is assumed.
 - Ethical boundary: do not use browser login cookies as the default route.
 
-## Manuscript-Facing Derived Assets
+## Derived Assets
 
-The manuscript currently uses derived summaries and figures, not raw data files.
-
-Main generated figure assets are copied into:
-
-- `manuscript/jcmc_latex_draft/figures/`
-- `manuscript/figure_audit_renders/`
-
-The source run directories for manuscript figures remain local under `outputs/` and are not committed.
+Derived tables, predictions, models, and figures remain local under `outputs/` and are not committed.

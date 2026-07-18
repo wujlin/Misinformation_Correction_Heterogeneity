@@ -55,6 +55,20 @@ wandb/
 *.synctex.gz
 *.toc
 
-# Generated manuscript upload packages
-manuscript/overleaf_upload/
-manuscript/overleaf_upload.zip
+# Unpublished writing and internal research records
+/manuscript/
+/docs/design/
+/docs/progress/
+/docs/internal/
+/scripts/
+
+# Manuscript-only build utilities
+/src/assemble_jcmc_latex.py
+/src/assemble_manuscript_markdown.py
+/src/build_jcmc_initial_submission_docx.py
+/src/build_jcmc_supplementary_materials.py
+/src/build_jcmc_supplementary_tables.py
+/src/create_method_framework_figure.py
+
+# Windows reserved-name artifact occasionally created under WSL
+/NUL

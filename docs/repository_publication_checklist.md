@@ -12,26 +12,26 @@ Use this checklist before pushing the project to GitHub.
 - [ ] Reddit credentials, browser cookies, access tokens, SSH keys, and API keys are absent.
 - [ ] Raw Reddit comment or submission text is absent from committed files.
 
-## Documentation
+## Public Documentation
 
 - [ ] `README.md` states that Reddit for Researchers API access was not approved.
 - [ ] `docs/data_access.md` and `docs/datasets.md` match the README data-access status.
-- [ ] `docs/reproducibility.md` distinguishes manuscript assembly from raw-data reproduction.
-- [ ] Progress logs are under `docs/progress/`, not in the repository root.
+- [ ] `docs/reproducibility.md` distinguishes code availability from data availability.
+- [ ] README and public docs contain no unpublished findings or manuscript prose.
 
-## Manuscript Assets
+## Unpublished Materials
 
-- [ ] `manuscript/jcmc_latex_draft/main.tex` exists.
-- [ ] `manuscript/jcmc_latex_draft/references.bib` exists.
-- [ ] `manuscript/jcmc_latex_draft/figures/` contains the manuscript figure PDFs.
-- [ ] Local TeX build artifacts such as `.aux`, `.log`, `.out`, `.bbl`, `.blg`, and `.synctex.gz` are not tracked.
+- [ ] `manuscript/` is ignored and has no tracked files.
+- [ ] `docs/design/`, `docs/progress/`, and `docs/internal/` are ignored and have no tracked files.
+- [ ] Manuscript-only assembly utilities are not tracked.
+- [ ] Local submission packages and generated figures are not tracked.
 
 ## Code and Environment
 
 - [ ] `requirements.txt` is present and describes the main Python dependencies.
 - [ ] Scripts expose `--help` where practical.
 - [ ] No script assumes machine-specific absolute paths by default.
-- [ ] WSA-specific notes remain in `docs/internal/wsa_qwen_annotation.md` and do not appear as required public setup.
+- [ ] Machine-specific workflow notes are not tracked.
 
 ## Final Scan Commands
 
@@ -39,6 +39,6 @@ Run from the repository root:
 
 ```bash
 git status --short --ignored
-rg -n "cookie|authorization|bearer|client_secret|password|api_key|BEGIN .*PRIVATE|ghp_|sk-[A-Za-z0-9]" . -g '!data/**' -g '!outputs/**' -g '!logs/**' -g '!**/__pycache__/**'
-rg -n "/mnt/|/home/jinlin|/home/wujlin|E:\\\\|C:\\\\|D:\\\\" . -g '!data/**' -g '!outputs/**' -g '!logs/**' -g '!**/__pycache__/**'
+rg -n "cookie|authorization|bearer|client_secret|password|api_key|BEGIN .*PRIVATE|ghp_|sk-[A-Za-z0-9]" . -g '!data/**' -g '!outputs/**' -g '!logs/**' -g '!**/__pycache__/**' -g '!docs/repository_publication_checklist.md'
+rg -n "/mnt/|/home/jinlin|/home/wujlin|E:\\\\|C:\\\\|D:\\\\" . -g '!data/**' -g '!outputs/**' -g '!logs/**' -g '!**/__pycache__/**' -g '!docs/repository_publication_checklist.md'
 ```
