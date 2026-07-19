@@ -48,10 +48,10 @@ def clean_axes(ax: plt.Axes, hide_left: bool = False) -> None:
         ax.tick_params(axis="y", length=0)
 
 
-def panel_label(ax: plt.Axes, label: str, x: float = -0.08) -> None:
+def panel_label(ax: plt.Axes, label: str, x: float = -0.08, y: float = 1.04) -> None:
     ax.text(
         x,
-        1.04,
+        y,
         label,
         transform=ax.transAxes,
         fontsize=10,
@@ -160,12 +160,9 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
         ),
     ]
 
-    fig, (ax_change, ax_profile) = plt.subplots(
-        1,
-        2,
-        figsize=(7.05, 2.85),
-        gridspec_kw={"width_ratios": [1.08, 1.0]},
-    )
+    fig = plt.figure(figsize=(3.35, 5.0))
+    ax_change = fig.add_axes([0.20, 0.59, 0.77, 0.32])
+    ax_profile = fig.add_axes([0.36, 0.10, 0.61, 0.32])
 
     x = np.arange(len(scenario_specs), dtype=float)
     bar_width = 0.34
@@ -209,11 +206,11 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
     ax_change.set_ylabel("Change from baseline\n(percentage points)")
     ax_change.set_ylim(0, 11.6)
     ax_change.set_yticks([0, 2, 4, 6, 8, 10])
-    panel_label(ax_change, "A")
+    panel_label(ax_change, "A", x=-0.22, y=1.12)
     ax_change.legend(
         frameon=False,
         loc="upper left",
-        bbox_to_anchor=(0.0, 1.04),
+        bbox_to_anchor=(0.0, 1.09),
         ncol=2,
         handlelength=1.2,
         columnspacing=1.0,
@@ -260,7 +257,7 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
     )
     for yi, observed, projected in zip(y, baseline_values, combined_values):
         ax_profile.text(
-            min(projected + 1.3, 72.0),
+            min(projected + 1.3, 86.0),
             yi,
             f"{observed:.1f} to {projected:.1f}",
             va="center",
@@ -271,23 +268,22 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
     ax_profile.set_yticks(y)
     ax_profile.set_yticklabels([label for _, label in profile_specs])
     ax_profile.set_xlabel("Share (%)")
-    ax_profile.set_xlim(0, 78)
-    ax_profile.set_xticks([0, 20, 40, 60])
-    panel_label(ax_profile, "B", x=-0.06)
-    ax_profile.set_ylim(-0.6, 4.35)
+    ax_profile.set_xlim(0, 93)
+    ax_profile.set_xticks([0, 20, 40, 60, 80])
+    panel_label(ax_profile, "B", x=-0.54, y=1.20)
+    ax_profile.set_ylim(-0.55, 3.65)
     ax_profile.legend(
         frameon=False,
         loc="upper left",
-        bbox_to_anchor=(0.0, 0.99),
+        bbox_to_anchor=(-0.52, 1.12),
         ncol=2,
-        handlelength=1.2,
-        columnspacing=0.9,
+        handlelength=1.0,
+        columnspacing=0.7,
         fontsize=7.3,
     )
     clean_axes(ax_profile, hide_left=True)
     ax_profile.tick_params(axis="y", labelleft=True, pad=3)
 
-    fig.subplots_adjust(left=0.10, right=0.985, bottom=0.24, top=0.84, wspace=0.48)
     save(fig, output_dir, "fig5-network-application")
 
 
