@@ -310,8 +310,8 @@ def prediction_rows(rows: list[dict[str, Any]], scores: np.ndarray, threshold: f
                 "target": int(row.get("target")),
                 "pair_relation_score": float(score),
                 "pair_relation_pred": int(float(score) >= threshold),
-                "llm_pair_relation_type": row.get("llm_pair_relation_type"),
-                "llm_pair_target_specificity": row.get("llm_pair_target_specificity"),
+                "manual_pair_relation_type": row.get("manual_pair_relation_type"),
+                "manual_pair_target_specificity": row.get("manual_pair_target_specificity"),
                 "claim_text": row.get("claim_text"),
                 "response_body": row.get("response_body"),
             }
@@ -419,8 +419,8 @@ def run(args: argparse.Namespace) -> None:
             "target",
             "pair_relation_score",
             "pair_relation_pred",
-            "llm_pair_relation_type",
-            "llm_pair_target_specificity",
+            "manual_pair_relation_type",
+            "manual_pair_target_specificity",
             "claim_text",
             "response_body",
         ],
@@ -501,7 +501,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["claim_response", "title_claim_response", "metadata_title_claim_response"],
         default="title_claim_response",
     )
-    parser.add_argument("--label-field", default="llm_pair_label")
+    parser.add_argument("--label-field", default="manual_pair_label")
     parser.add_argument("--split-mode", choices=["group_response", "random"], default="group_response")
     parser.add_argument("--test-size", type=float, default=0.15)
     parser.add_argument("--val-size", type=float, default=0.15)

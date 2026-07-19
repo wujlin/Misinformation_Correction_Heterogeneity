@@ -163,15 +163,15 @@ def load_thread_lookup(path: Path) -> dict[str, dict[str, str]]:
     return lookup
 
 
-def load_qwen_lookup(path: Path | None) -> dict[str, dict[str, str]]:
+def load_manual_lookup(path: Path | None) -> dict[str, dict[str, str]]:
     if not path or not path.exists():
         return {}
     keep_fields = [
         "combined_annotation_id",
         "annotation_id",
-        "llm_label",
-        "llm_confidence",
-        "llm_correction_target",
+        "manual_label",
+        "manual_confidence",
+        "manual_correction_target",
         "annotation_source",
     ]
     lookup = {}
@@ -186,7 +186,7 @@ def build_candidates(args: argparse.Namespace) -> list[dict[str, Any]]:
     existing_ids = load_existing_ids(args.exclude_annotations)
     comments = load_comment_lookup(args.comments, args.text_limit)
     threads = load_thread_lookup(args.thread_climate)
-    qwen = load_qwen_lookup(args.qwen_annotations)
+    manual = load_manual_lookup(args.manual_annotations)
 
     candidates = []
     for row in read_csv(args.predictions):
@@ -224,9 +224,9 @@ def build_candidates(args: argparse.Namespace) -> list[dict[str, Any]]:
             "targeted_sampling_focus": "later_or_reply_comment" if later_focus else "early_top_level_comment",
             "submission_title": comment["submission_title"],
             "body": comment["body"],
-            "in_qwen_annotations": 1 if comment_id in qwen else 0,
-            "qwen_label": qwen.get(comment_id, {}).get("llm_label", ""),
-            "qwen_confidence": qwen.get(comment_id, {}).get("llm_confidence", ""),
+            "in_manual_annotations": 1 if comment_id in manual else 0,
+            "manual_label": manual.get(comment_id, {}).get("manual_label", ""),
+            "manual_confidence": manual.get(comment_id, {}).get("manual_confidence", ""),
             **thread,
         }
         candidates.append(item)
@@ -329,7 +329,7 @@ def summarize(rows: list[dict[str, Any]], candidates: list[dict[str, Any]]) -> d
         "sample_by_model_pred": counts("public_correction_pred"),
         "sample_by_score_bin": counts("score_bin"),
         "sample_by_community_group": counts("community_group_proxy"),
-        "sample_by_qwen_presence": counts("in_qwen_annotations"),
+        "sample_by_manual_presence": counts("in_manual_annotations"),
         "candidate_by_high_early_audience_structural_heterogeneity": counts(
             "high_early_audience_structural_heterogeneity", candidates
         ),
@@ -383,9 +383,9 @@ def run(args: argparse.Namespace) -> None:
         "discursive_cue_entropy",
         "comments",
         "unique_authors",
-        "in_qwen_annotations",
-        "qwen_label",
-        "qwen_confidence",
+        "in_manual_annotations",
+        "manual_label",
+        "manual_confidence",
     ]
     write_csv(args.output_dir / "annotation_sample_blind.csv", selected, blind_fields)
     write_csv(args.output_dir / "annotation_sample_with_metadata.csv", selected, blind_fields + metadata_fields)
@@ -428,7 +428,7 @@ def run(args: argparse.Namespace) -> None:
         "predictions": str(args.predictions),
         "comments": str(args.comments),
         "thread_climate": str(args.thread_climate),
-        "qwen_annotations": str(args.qwen_annotations) if args.qwen_annotations else "",
+        "manual_annotations": str(args.manual_annotations) if args.manual_annotations else "",
         "exclude_annotations": [str(path) for path in args.exclude_annotations],
         "output_dir": str(args.output_dir),
         "target_rows": args.target_rows,
@@ -462,7 +462,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--comments", type=Path, required=True)
     parser.add_argument("--thread-climate", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
-    parser.add_argument("--qwen-annotations", type=Path)
+    parser.add_argument("--manual-annotations", type=Path)
     parser.add_argument("--exclude-annotations", type=Path, nargs="*", default=[])
     parser.add_argument("--target-rows", type=int, default=1200)
     parser.add_argument("--high-heterogeneity-share", type=float, default=0.60)

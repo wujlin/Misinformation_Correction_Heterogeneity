@@ -143,7 +143,7 @@ def calibration_summary(target: np.ndarray, score: np.ndarray) -> tuple[dict[str
 def load_validation_frame(args: argparse.Namespace) -> tuple[pd.DataFrame, dict[str, int]]:
     labels = pd.read_csv(args.human_labels, low_memory=False)
     scores = pd.read_csv(args.model_scores, low_memory=False)
-    labels["manual_label"] = pd.to_numeric(labels["llm_pair_label"], errors="coerce")
+    labels["manual_label"] = pd.to_numeric(labels["manual_pair_label"], errors="coerce")
     raw_unclear = int(labels["manual_label"].isna().sum())
     labels["response_words"] = labels["response_body"].fillna("").astype(str).str.split().str.len()
     keep = [
@@ -442,16 +442,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--human-labels",
         type=Path,
         default=Path(
-            "outputs/llm_qwen_pair_relation_independent_audit3_combined_800_20260627T162524Z/"
-            "llm_pair_annotations.csv"
+            "outputs/manual_pair_relation_independent_audit3_combined_800_20260627T162524Z/"
+            "manual_pair_annotations.csv"
         ),
     )
     parser.add_argument(
         "--training-labels",
         type=Path,
         default=Path(
-            "outputs/llm_qwen_pair_relation_combined_6232_next_hard_plus_audit1_20260628T035000Z/"
-            "llm_pair_annotations.csv"
+            "outputs/manual_pair_relation_combined_6232_next_hard_plus_audit1_20260628T035000Z/"
+            "manual_pair_annotations.csv"
         ),
     )
     parser.add_argument(

@@ -21,12 +21,16 @@ from fit_revised_corrective_response_models import (
 
 
 OUTCOME = "first_later_corrective_response"
-DISCOURSE_TERMS = [
+CORRECTION_TERMS = [
     "early_corrective_response_presence",
     "early_additional_corrections",
-    "early_relation_only_diversity_z",
 ]
-FOCAL_TERMS = ["prior_cross_community_participation", *DISCOURSE_TERMS]
+DEFAULT_DIVERSITY_TERM = "early_relation_only_diversity_z"
+FOCAL_TERMS = [
+    "prior_cross_community_participation",
+    *CORRECTION_TERMS,
+    DEFAULT_DIVERSITY_TERM,
+]
 NUISANCE_TERMS = (
     "early_cross_community_participant_share_z + "
     "early_ambient_hostile_language_rate_z + "
@@ -40,9 +44,10 @@ NUISANCE_TERMS = (
 
 def formula(
     access_term: str = "prior_cross_community_participation",
+    diversity_term: str = DEFAULT_DIVERSITY_TERM,
     extra_terms: str | None = None,
 ) -> str:
-    focused_terms = " + ".join([access_term, *DISCOURSE_TERMS])
+    focused_terms = " + ".join([access_term, *CORRECTION_TERMS, diversity_term])
     terms = f"{focused_terms} + {NUISANCE_TERMS}"
     if extra_terms:
         terms = f"{terms} + {extra_terms}"
@@ -100,6 +105,13 @@ def run(args: argparse.Namespace) -> None:
     metrics_dir.mkdir(exist_ok=True)
 
     base = pd.read_csv(args.analysis_frame, low_memory=False)
+    base["prior_two_category_participation"] = (
+        base["prior_community_group_comments_1"].gt(0)
+        & (
+            base["prior_community_group_comments_0"]
+            + base["prior_community_group_comments_2"]
+        ).gt(0)
+    ).astype(int)
     coefficient_frames: list[pd.DataFrame] = []
     fit_rows: list[dict[str, Any]] = []
     focal_rows: list[dict[str, Any]] = []
@@ -131,6 +143,22 @@ def run(args: argparse.Namespace) -> None:
     fit_rows.append(fit_row)
     focal_rows.extend(focal)
 
+    coefficients, fit_row, focal = fit_specification(
+        "hard_label_relation_richness",
+        "Relation diversity",
+        "Richness among identified pairs",
+        base,
+        formula(diversity_term="early_relation_only_richness_z"),
+        report_terms=[
+            "prior_cross_community_participation",
+            *CORRECTION_TERMS,
+            "early_relation_only_richness_z",
+        ],
+    )
+    coefficient_frames.append(coefficients)
+    fit_rows.append(fit_row)
+    focal_rows.extend(focal)
+
     candidate["two_candidate_targets"] = (
         candidate["first_later_candidate_count"] >= 2
     ).astype(int)
@@ -145,7 +173,47 @@ def run(args: argparse.Namespace) -> None:
     fit_rows.append(fit_row)
     focal_rows.extend(focal)
 
+    coefficients, fit_row, focal = fit_specification(
+        "hard_label_relation_diversity",
+        "Relation diversity",
+        "Entropy across assigned categories",
+        base,
+        formula(diversity_term="early_hard_relation_diversity_z"),
+        report_terms=[
+            "prior_cross_community_participation",
+            *CORRECTION_TERMS,
+            "early_hard_relation_diversity_z",
+        ],
+    )
+    coefficient_frames.append(coefficients)
+    fit_rows.append(fit_row)
+    focal_rows.extend(focal)
+
+    for subreddit in sorted(base["subreddit"].dropna().astype(str).unique()):
+        leave_one_out = base.loc[base["subreddit"].astype(str).ne(subreddit)].copy()
+        coefficients, fit_row, focal = fit_specification(
+            f"leave_out_{subreddit}",
+            "Leave-one-subreddit-out",
+            f"Excludes r/{subreddit}",
+            leave_one_out,
+            formula(),
+            report_terms=["prior_cross_community_participation"],
+        )
+        coefficient_frames.append(coefficients)
+        fit_rows.append(fit_row)
+        focal_rows.extend(focal)
+
     access_specs = [
+        (
+            "access_two_category_boundary",
+            "Two-category community boundary",
+            "prior_two_category_participation",
+        ),
+        (
+            "access_outgroup_binary",
+            "Prior participation outside the focal category",
+            "prior_outgroup_participation",
+        ),
         (
             "access_group_entropy",
             "Community-category entropy",
@@ -227,6 +295,20 @@ def run(args: argparse.Namespace) -> None:
         "candidate_target_n": int(len(candidate)),
         "prior_context_features": str(args.prior_context_features),
         "thresholds": [0.3, 0.4, 0.5, 0.6, 0.7],
+        "leave_one_subreddit_out_models": int(base["subreddit"].nunique()),
+        "hard_label_diversity_checks": [
+            "entropy including the no-identified-relation category",
+            "relation richness among identified pairs",
+        ],
+        "alternative_access_checks": {
+            "two_category_boundary": (
+                "skeptical or anti-institutional versus the combined public-health, "
+                "news, vaccine-experience, and health categories"
+            ),
+            "outgroup_participation": (
+                "at least one prior comment outside the focal thread category"
+            ),
+        },
         "all_models_converged": bool(fits["converged"].all()),
         "model_count": int(len(fits)),
         "threshold_scope": (

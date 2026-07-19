@@ -141,7 +141,7 @@ def detector_validation_values(summary: dict[str, Any]) -> tuple[pd.DataFrame, p
 
 def comment_only_audit3_metrics(annotations_path: Path) -> dict[str, Any]:
     annotations = pd.read_csv(annotations_path)
-    labels = pd.to_numeric(annotations["llm_pair_label"], errors="coerce")
+    labels = pd.to_numeric(annotations["manual_pair_label"], errors="coerce")
     scores = pd.to_numeric(annotations["public_correction_score"], errors="coerce")
     valid = labels.isin([0, 1]) & scores.notna()
     y_true = labels.loc[valid].astype(int).to_numpy()
@@ -523,7 +523,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--audit3-annotations",
         type=Path,
-        default=Path("outputs/llm_qwen_pair_relation_independent_audit3_combined_800_20260627T162524Z/llm_pair_annotations.csv"),
+        default=Path("outputs/manual_pair_relation_independent_audit3_combined_800_20260627T162524Z/manual_pair_annotations.csv"),
     )
     parser.add_argument(
         "--output-dir",

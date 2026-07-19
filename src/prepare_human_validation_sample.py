@@ -122,15 +122,15 @@ def load_climate_lookup(path: Path | None) -> dict[str, dict[str, str]]:
     return lookup
 
 
-def load_qwen_lookup(path: Path | None) -> dict[str, dict[str, str]]:
+def load_manual_lookup(path: Path | None) -> dict[str, dict[str, str]]:
     if not path or not path.exists():
         return {}
     keep_fields = [
         "combined_annotation_id",
         "annotation_id",
-        "llm_label",
-        "llm_confidence",
-        "llm_correction_target",
+        "manual_label",
+        "manual_confidence",
+        "manual_correction_target",
         "annotation_source",
     ]
     lookup = {}
@@ -144,7 +144,7 @@ def load_qwen_lookup(path: Path | None) -> dict[str, dict[str, str]]:
 def build_candidates(args: argparse.Namespace) -> list[dict[str, Any]]:
     comments = load_comment_lookup(args.comments, args.text_limit)
     climate = load_climate_lookup(args.thread_climate)
-    qwen = load_qwen_lookup(args.qwen_annotations)
+    manual = load_manual_lookup(args.manual_annotations)
 
     candidates = []
     for row in read_csv(args.predictions):
@@ -156,7 +156,7 @@ def build_candidates(args: argparse.Namespace) -> list[dict[str, Any]]:
         score = to_float(row.get("public_correction_score"))
         comment = comments[comment_id]
         parent = comments.get(parent_id, {})
-        qwen_row = qwen.get(comment_id, {})
+        manual_row = manual.get(comment_id, {})
         climate_row = climate.get(submission_id, {})
         candidates.append(
             {
@@ -176,11 +176,11 @@ def build_candidates(args: argparse.Namespace) -> list[dict[str, Any]]:
                 "submission_title": comment.get("submission_title", ""),
                 "parent_body": compact_text(parent.get("body", ""), args.text_limit),
                 "body": comment.get("body", ""),
-                "in_qwen_annotations": 1 if qwen_row else 0,
-                "qwen_label": qwen_row.get("llm_label", ""),
-                "qwen_confidence": qwen_row.get("llm_confidence", ""),
-                "qwen_annotation_id": qwen_row.get("combined_annotation_id") or qwen_row.get("annotation_id", ""),
-                "qwen_annotation_source": qwen_row.get("annotation_source", ""),
+                "in_manual_annotations": 1 if manual_row else 0,
+                "manual_label": manual_row.get("manual_label", ""),
+                "manual_confidence": manual_row.get("manual_confidence", ""),
+                "manual_annotation_id": manual_row.get("combined_annotation_id") or manual_row.get("annotation_id", ""),
+                "manual_annotation_source": manual_row.get("annotation_source", ""),
                 **climate_row,
             }
         )
@@ -236,9 +236,9 @@ def stratified_take(
 
 
 def prepare_sample(candidates: list[dict[str, Any]], args: argparse.Namespace) -> list[dict[str, Any]]:
-    qwen_pool = [row for row in candidates if row.get("in_qwen_annotations") == 1]
-    qwen_target = min(args.min_qwen_rows, args.target_rows, len(qwen_pool))
-    selected = stratified_take(qwen_pool, qwen_target, args.seed)
+    manual_pool = [row for row in candidates if row.get("in_manual_annotations") == 1]
+    manual_target = min(args.min_manual_rows, args.target_rows, len(manual_pool))
+    selected = stratified_take(manual_pool, manual_target, args.seed)
     selected_ids = {row["comment_id"] for row in selected}
 
     remaining_target = args.target_rows - len(selected)
@@ -260,8 +260,8 @@ def summarize(rows: list[dict[str, Any]], candidates: list[dict[str, Any]]) -> d
         "sample_by_score_bin": dict(sorted(Counter(row["score_bin"] for row in rows).items())),
         "sample_by_group": dict(sorted(Counter(row["community_group_proxy"] for row in rows).items())),
         "sample_by_model_pred": dict(sorted(Counter(str(row["public_correction_pred"]) for row in rows).items())),
-        "sample_by_qwen_presence": dict(sorted(Counter(str(row["in_qwen_annotations"]) for row in rows).items())),
-        "sample_by_qwen_label": dict(sorted(Counter(str(row.get("qwen_label", "")) for row in rows).items())),
+        "sample_by_manual_presence": dict(sorted(Counter(str(row["in_manual_annotations"]) for row in rows).items())),
+        "sample_by_manual_label": dict(sorted(Counter(str(row.get("manual_label", "")) for row in rows).items())),
         "sample_by_high_hostility": dict(
             sorted(Counter(str(row.get("high_thread_hostility_climate", "")) for row in rows).items())
         ),
@@ -304,11 +304,11 @@ def run(args: argparse.Namespace) -> None:
         "score_bin",
         "uncertainty_distance",
         "created_utc",
-        "in_qwen_annotations",
-        "qwen_label",
-        "qwen_confidence",
-        "qwen_annotation_id",
-        "qwen_annotation_source",
+        "in_manual_annotations",
+        "manual_label",
+        "manual_confidence",
+        "manual_annotation_id",
+        "manual_annotation_source",
         "comments",
         "unique_authors",
         "predicted_public_corrections",
@@ -337,10 +337,10 @@ def run(args: argparse.Namespace) -> None:
         "predictions": str(args.predictions),
         "comments": str(args.comments),
         "thread_climate": str(args.thread_climate) if args.thread_climate else "",
-        "qwen_annotations": str(args.qwen_annotations) if args.qwen_annotations else "",
+        "manual_annotations": str(args.manual_annotations) if args.manual_annotations else "",
         "output_dir": str(args.output_dir),
         "target_rows": args.target_rows,
-        "min_qwen_rows": args.min_qwen_rows,
+        "min_manual_rows": args.min_manual_rows,
         "seed": args.seed,
         "text_limit": args.text_limit,
         "summary": summarize(selected, candidates),
@@ -356,9 +356,9 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--comments", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--thread-climate", type=Path)
-    parser.add_argument("--qwen-annotations", type=Path)
+    parser.add_argument("--manual-annotations", type=Path)
     parser.add_argument("--target-rows", type=int, default=400)
-    parser.add_argument("--min-qwen-rows", type=int, default=100)
+    parser.add_argument("--min-manual-rows", type=int, default=100)
     parser.add_argument("--seed", type=int, default=20260625)
     parser.add_argument("--text-limit", type=int, default=5000)
     return parser

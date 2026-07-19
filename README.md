@@ -1,6 +1,6 @@
 # Misinformation Correction Heterogeneity
 
-This repository contains the computational pipeline for studying corrective responses in online discussions. It includes data-preparation utilities, relation-aware text classification, statistical analysis, robustness checks, simulation, and scientific-figure generation.
+This repository contains the computational pipeline for studying corrective responses in online discussions. It includes data-preparation utilities, human annotation integration, relation-aware text classification, statistical analysis, robustness checks, simulation, and scientific-figure generation.
 
 The unpublished manuscript, submission files, internal research notes, and machine-specific workflow files are intentionally excluded from the public repository.
 
@@ -51,9 +51,10 @@ Data preparation:
 python src/prepare_covidvaccine_dataset.py
 ```
 
-Correction detection and relation-aware pair modeling:
+Human annotation integration and relation-aware pair modeling:
 
 ```bash
+python src/combine_pair_annotations.py --help
 python src/train_pair_relation_classifier.py --help
 python src/evaluate_pair_relation_classifier.py --help
 python src/predict_pair_relation_candidates.py --help

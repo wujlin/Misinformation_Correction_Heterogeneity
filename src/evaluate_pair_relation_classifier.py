@@ -202,8 +202,8 @@ def prediction_rows(rows: list[dict[str, Any]], scores: np.ndarray, threshold: f
                 "target": int(row.get("target")),
                 "pair_relation_score": float(score),
                 "pair_relation_pred": int(float(score) >= threshold),
-                "llm_pair_relation_type": row.get("llm_pair_relation_type"),
-                "llm_pair_target_specificity": row.get("llm_pair_target_specificity"),
+                "manual_pair_relation_type": row.get("manual_pair_relation_type"),
+                "manual_pair_target_specificity": row.get("manual_pair_target_specificity"),
                 "claim_text": compact_text(row.get("claim_text"), 800),
                 "response_body": compact_text(row.get("response_body"), 800),
             }
@@ -253,13 +253,13 @@ def run(args: argparse.Namespace) -> None:
             "target",
             "pair_relation_score",
             "pair_relation_pred",
-            "llm_pair_relation_type",
-            "llm_pair_target_specificity",
+            "manual_pair_relation_type",
+            "manual_pair_target_specificity",
             "claim_text",
             "response_body",
         ],
     )
-    for field in ["sample_component", "pair_source", "llm_pair_relation_type", "llm_pair_target_specificity", "subreddit"]:
+    for field in ["sample_component", "pair_source", "manual_pair_relation_type", "manual_pair_target_specificity", "subreddit"]:
         rows_out = subgroup_rows(rows, scores, field, float(args.threshold))
         write_csv(
             tables_dir / f"{field}_metrics.csv",
@@ -316,7 +316,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument("--output-dir", type=Path, required=True)
     parser.add_argument("--training-summary", type=Path)
     parser.add_argument("--feature-mode", default="auto")
-    parser.add_argument("--label-field", default="llm_pair_label")
+    parser.add_argument("--label-field", default="manual_pair_label")
     parser.add_argument("--threshold", type=float)
     parser.add_argument("--batch-size", type=int, default=128)
     parser.add_argument("--max-length", type=int, default=512)

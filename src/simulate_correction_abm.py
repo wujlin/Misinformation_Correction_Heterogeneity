@@ -5,8 +5,8 @@ The simulation uses observed thread-author instances as the agent population.
 Agent decision probabilities are calibrated from a no-anti-institutional logit
 model, then replayed under counterfactual observable contexts.
 
-This script is intentionally transparent: it does not use LLM agents and it
-does not claim to observe private recognition or anticipated accountability.
+This script does not claim to observe private recognition or anticipated
+accountability.
 """
 
 from __future__ import annotations

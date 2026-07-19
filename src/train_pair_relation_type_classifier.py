@@ -512,7 +512,7 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["claim_response", "title_claim_response", "metadata_title_claim_response"],
         default="claim_response",
     )
-    parser.add_argument("--relation-type-field", default="llm_pair_relation_type")
+    parser.add_argument("--relation-type-field", default="manual_pair_relation_type")
     parser.add_argument("--split-mode", choices=["group_response", "random"], default="group_response")
     parser.add_argument("--test-size", type=float, default=0.15)
     parser.add_argument("--val-size", type=float, default=0.15)

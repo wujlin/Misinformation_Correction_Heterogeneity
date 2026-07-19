@@ -46,7 +46,6 @@ From the JCMC official author instructions:
 - Tables, figures, appendices, and endnotes go after references.
 - Remove author-identifying information for anonymous review.
 - Include a Data Availability Statement.
-- Disclose use of generative AI in the cover letter and, where required, in the manuscript methods.
 
 ## Practical Workflow
 

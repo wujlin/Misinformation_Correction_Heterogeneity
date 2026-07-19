@@ -15,11 +15,15 @@ python src/pushshift_filter.py --help
 
 Raw comments and submissions are not redistributed through this repository.
 
-### 2. Annotation and Relation Modeling
+### 2. Human Annotation and Relation Modeling
 
 Requires local annotation files, candidate pairs, and model resources.
 
+The relation-model inputs use `manual_pair_label`, `manual_pair_relation_type`,
+and `manual_pair_target_specificity` for the adjudicated human coding fields.
+
 ```bash
+python src/combine_pair_annotations.py --help
 python src/train_pair_relation_classifier.py --help
 python src/evaluate_pair_relation_classifier.py --help
 python src/predict_pair_relation_candidates.py --help

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare a larger stratified sample for LLM-assisted correction annotation."""
+"""Prepare a larger stratified sample for human correction annotation."""
 
 from __future__ import annotations
 
@@ -241,7 +241,7 @@ def run(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Prepare expanded LLM annotation sample.")
+    parser = argparse.ArgumentParser(description="Prepare expanded human annotation sample.")
     parser.add_argument("--predictions", type=Path, required=True)
     parser.add_argument("--comments", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)

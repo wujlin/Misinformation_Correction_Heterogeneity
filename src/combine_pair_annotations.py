@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Combine pair-level LLM annotation CSV files."""
+"""Combine pair-level human annotation CSV files."""
 
 from __future__ import annotations
 
@@ -66,29 +66,29 @@ def run(args: argparse.Namespace) -> None:
     if not fieldnames and rows:
         fieldnames = list(rows[0].keys())
 
-    write_csv(args.output_dir / "llm_pair_annotations.csv", rows, fieldnames)
-    write_csv(tables_dir / "label_counts.csv", summarize(rows, "llm_pair_label"), ["llm_pair_label", "rows"])
+    write_csv(args.output_dir / "manual_pair_annotations.csv", rows, fieldnames)
+    write_csv(tables_dir / "label_counts.csv", summarize(rows, "manual_pair_label"), ["manual_pair_label", "rows"])
     write_csv(
         tables_dir / "raw_label_counts.csv",
-        summarize(rows, "llm_pair_label_raw"),
-        ["llm_pair_label_raw", "rows"],
+        summarize(rows, "manual_pair_label_initial"),
+        ["manual_pair_label_initial", "rows"],
     )
     write_csv(
         tables_dir / "relation_type_counts.csv",
-        summarize(rows, "llm_pair_relation_type"),
-        ["llm_pair_relation_type", "rows"],
+        summarize(rows, "manual_pair_relation_type"),
+        ["manual_pair_relation_type", "rows"],
     )
     write_csv(
         tables_dir / "target_specificity_counts.csv",
-        summarize(rows, "llm_pair_target_specificity"),
-        ["llm_pair_target_specificity", "rows"],
+        summarize(rows, "manual_pair_target_specificity"),
+        ["manual_pair_target_specificity", "rows"],
     )
     write_csv(tables_dir / "pair_source_counts.csv", summarize(rows, "pair_source"), ["pair_source", "rows"])
     write_csv(tables_dir / "sample_component_counts.csv", summarize(rows, "sample_component"), ["sample_component", "rows"])
     conflict_rows = [
         row
         for row in rows
-        if str(row.get("llm_pair_label", "")).strip() != str(row.get("llm_pair_label_raw", "")).strip()
+        if str(row.get("manual_pair_label", "")).strip() != str(row.get("manual_pair_label_initial", "")).strip()
     ]
     if conflict_rows:
         conflict_fields = [
@@ -96,14 +96,14 @@ def run(args: argparse.Namespace) -> None:
             "pair_id",
             "sample_component",
             "pair_source",
-            "llm_pair_label_raw",
-            "llm_pair_label",
-            "llm_pair_relation_type",
-            "llm_pair_target_specificity",
-            "llm_pair_confidence",
+            "manual_pair_label_initial",
+            "manual_pair_label",
+            "manual_pair_relation_type",
+            "manual_pair_target_specificity",
+            "manual_pair_confidence",
             "claim_text",
             "response_body",
-            "llm_pair_rationale",
+            "manual_pair_notes",
         ]
         write_csv(tables_dir / "raw_final_label_conflicts.csv", conflict_rows, conflict_fields)
 
@@ -134,7 +134,7 @@ def run(args: argparse.Namespace) -> None:
 
 
 def build_parser() -> argparse.ArgumentParser:
-    parser = argparse.ArgumentParser(description="Combine pair-level LLM annotation CSVs.")
+    parser = argparse.ArgumentParser(description="Combine pair-level human annotation CSVs.")
     parser.add_argument("--inputs", type=Path, nargs="+", required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
     return parser
