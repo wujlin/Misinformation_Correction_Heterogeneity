@@ -2,6 +2,16 @@
 
 This public repository preserves the computational pipeline. Full reproduction requires local data and intermediate artifacts that cannot be redistributed through GitHub.
 
+## Software Environment
+
+The reported analysis used Python 3.11. The versions of the core analysis and modeling packages are recorded in `requirements.txt`:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+Install the PyTorch build appropriate for the available CPU or CUDA platform when the default package is not suitable.
+
 ## Reproduction Levels
 
 ### 1. Raw Data Preparation

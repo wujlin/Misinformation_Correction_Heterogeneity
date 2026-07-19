@@ -43,6 +43,16 @@ The most important local-only assets are:
 
 The scripts remain available so that researchers with valid data access can reconstruct the computational pipeline. See [`docs/reproducibility.md`](docs/reproducibility.md) for the run map.
 
+## Environment
+
+The reported analysis used Python 3.11. Install the recorded core dependencies with:
+
+```bash
+python -m pip install -r requirements.txt
+```
+
+The PyTorch build may need to be selected separately for the available CPU or CUDA platform.
+
 ## Main Pipeline Components
 
 Data preparation:

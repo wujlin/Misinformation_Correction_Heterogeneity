@@ -32,6 +32,7 @@ def set_style() -> None:
             "axes.labelsize": 8.5,
             "xtick.labelsize": 8,
             "ytick.labelsize": 8,
+            "legend.fontsize": 7.5,
             "axes.edgecolor": INK,
             "axes.linewidth": 0.8,
             "pdf.fonttype": 42,
@@ -155,7 +156,7 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
         ),
         (
             "later_comments_after_correction",
-            "Later comments",
+            "Outcome-period\ncomments",
             BLUE,
         ),
     ]
@@ -219,9 +220,9 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
     clean_axes(ax_change)
 
     profile_specs = [
-        ("corrective_response_rate", "Corrective responses"),
+        ("corrective_response_rate", "Corrective first\nresponses"),
         ("threads_with_correction", "Threads"),
-        ("later_comments_after_correction", "Later comments"),
+        ("later_comments_after_correction", "Outcome-period\ncomments"),
         ("same_branch_reach", "Same-branch reach"),
     ]
     baseline = summary.loc[summary["scenario"].eq("baseline")].set_index("metric")
@@ -252,7 +253,7 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
         color=CLAY,
         edgecolor=WHITE,
         linewidth=0.6,
-        label="Combined increase",
+        label="Combined scenario",
         zorder=3,
     )
     for yi, observed, projected in zip(y, baseline_values, combined_values):
@@ -262,7 +263,7 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
             f"{observed:.1f} to {projected:.1f}",
             va="center",
             ha="left",
-            fontsize=7.2,
+            fontsize=7.5,
             color=INK,
         )
     ax_profile.set_yticks(y)
@@ -279,7 +280,7 @@ def figure_network_application(summary_path: Path, output_dir: Path) -> None:
         ncol=2,
         handlelength=1.0,
         columnspacing=0.7,
-        fontsize=7.3,
+        fontsize=7.5,
     )
     clean_axes(ax_profile, hide_left=True)
     ax_profile.tick_params(axis="y", labelleft=True, pad=3)

@@ -27,7 +27,7 @@ FIGURE_MODEL_LABELS = {
     "Pair only": "DeBERTa-v3-base pair",
     "Large pair + title": "DeBERTa-v3-large + title",
     "NLI pair": "RoBERTa-MNLI pair",
-    "Relation type": "DeBERTa-v3-base relation types",
+    "Relation type": "DeBERTa-v3-base relation model",
     "Comment only": "DeBERTa-v3-base response only",
 }
 
@@ -190,7 +190,7 @@ def figure_classifier(args: argparse.Namespace, figures_dir: Path) -> None:
     ax.text(
         0.04,
         0.94,
-        "Brier = .139\nSlope = .883",
+        "Brier = .139\nSlope = 0.883",
         transform=ax.transAxes,
         ha="left",
         va="top",
